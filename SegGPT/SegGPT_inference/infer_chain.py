@@ -19,13 +19,16 @@ imagenet_std = np.array([0.229, 0.224, 0.225])
 
 
 def prompted_inference(prompts, run_config):
+    # TODO: Run on complete list of images
     prompt_images = prompts['prompt_inputs']
     prompt_masks = prompts['prompt_masks']
     output = os.path.join(run_config['output_path'], 'roi.png')
     overlay_output = os.path.join(run_config['output_path'],
                                       'roi_overlay.png')
+    input_images = run_config['input_files']
+    input_image = input_images[0]
     return inference_image(run_config['model'], run_config['device'],
-                               run_config['input_files'][0], prompt_images,
+                               input_image, prompt_images,
                                prompt_masks, output, overlay_output,
                                return_mask=True, upscale=run_config['upscale'])
 
