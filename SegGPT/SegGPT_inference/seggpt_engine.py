@@ -53,10 +53,26 @@ def run_one_image(img, tgt, model, device):
     return output
 
 
+def create_overlay(image, output):
+    # convert image to greyscale, give overlay a colour
+    image = Image.fromarray((image * 255).astype(np.uint8), mode='RGB')
+    image = image.convert('L')
+    image = np.array(image, dtype=np.uint8)
+
+    # expand image into three channels with equal values
+    overlay = np.stack((image,) * 3, axis=2)
+
+    inverted_output = 255 - output
+
+    overlay[:, :, 1] = np.clip(overlay[:, :, 1].astype(np.int16) - output[:, :, 1].astype(np.int16), 0, 255).astype(np.uint8)
+    # TODO: merge channels of output array
+    return Image.fromarray((overlay).astype(np.uint8))
+
+
 def inference_image(model, device, img_path, img2_paths, tgt2_paths, out_path, ovl_path=None, return_mask=False, upscale=True):
     res, hres = 448, 448
 
-    image = Image.open(img_path).convert("RGB")
+    image = Image.open(img_path).convert("RGB")  # D: Why is it converted??
     input_image = np.array(image)
     size = image.size
     image = np.array(image.resize((res, hres))) / 255.
@@ -104,7 +120,7 @@ def inference_image(model, device, img_path, img2_paths, tgt2_paths, out_path, o
     output =  output.numpy()
 
     if ovl_path is not None:
-        overlay = Image.fromarray((image * 255 * (0.6 * output / 255 + 0.4)).astype(np.uint8))
+        overlay = create_overlay(image, output)
         overlay.save(ovl_path)
 
     output_img = Image.fromarray(output.astype(np.uint8))
