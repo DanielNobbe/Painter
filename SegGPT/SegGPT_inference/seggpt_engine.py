@@ -62,8 +62,6 @@ def create_overlay(image, output):
     # expand image into three channels with equal values
     overlay = np.stack((image,) * 3, axis=2)
 
-    inverted_output = 255 - output
-
     overlay[:, :, 1] = np.clip(overlay[:, :, 1].astype(np.int16) - output[:, :, 1].astype(np.int16), 0, 255).astype(np.uint8)
     # TODO: merge channels of output array
     return Image.fromarray((overlay).astype(np.uint8))
