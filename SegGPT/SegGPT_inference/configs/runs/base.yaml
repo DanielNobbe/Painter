@@ -1,0 +1,13 @@
+input_files:
+  - input/images/IMG_0124.JPG
+
+prompt_config: configs/prompt_config.yaml
+save_masks: true
+output_path: chain-output
+device: cuda
+ckpt_path: seggpt_vit_large.pth
+model: seggpt_vit_large_patch16_input896x448
+seg_type: instance
+
+threshold: 20
+upscale: false
