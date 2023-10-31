@@ -25,7 +25,7 @@ def prompted_inference(prompts, run_config):
     overlay_output = os.path.join(run_config['output_path'],
                                       'roi_overlay.png')
     return inference_image(run_config['model'], run_config['device'],
-                               run_config['input_image'], prompt_images,
+                               run_config['input_files'][0], prompt_images,
                                prompt_masks, output, overlay_output,
                                return_mask=True, upscale=run_config['upscale'])
 
@@ -36,7 +36,6 @@ def main(args):
     with open(run_cfg_path, 'r') as f:
         run_cfg = yaml.safe_load(f)
 
-    input_image = run_cfg['input_files'][0]
     save_masks = run_cfg['save_masks']
     output_path = run_cfg['output_path']
     device = run_cfg['device']
@@ -44,7 +43,6 @@ def main(args):
     model_type = run_cfg['model']
     seg_type = run_cfg['seg_type']  # TODO: Try semantic
     threshold = run_cfg['threshold']
-    upscale = run_cfg['upscale']
 
 
     os.makedirs(output_path, exist_ok=True)
