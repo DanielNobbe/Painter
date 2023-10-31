@@ -18,6 +18,15 @@ imagenet_mean = np.array([0.485, 0.456, 0.406])
 imagenet_std = np.array([0.229, 0.224, 0.225])
 
 
+def prompted_inference(prompts):
+    prompt_images = roi_prompts['prompt_inputs']
+    prompt_masks = roi_prompts['prompt_masks']
+    roi_output = os.path.join(output_path, 'roi.png')
+    roi_overlay_output = os.path.join(output_path, 'roi_overlay.png')
+    roi_mask = inference_image(model, device, input_image, prompt_images, prompt_masks, roi_output, roi_overlay_output, return_mask=True, upscale=upscale)
+
+
+
 def main(args):
     run_cfg_path = args.config_path
     with open(run_cfg_path, 'r') as f:
