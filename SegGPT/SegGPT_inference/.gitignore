@@ -3,3 +3,6 @@ output*
 **.pyc
 **/__pycache__/**
 __pycache__
+input/*
+output/*
+chain-output/*
