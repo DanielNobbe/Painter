@@ -18,12 +18,16 @@ imagenet_mean = np.array([0.485, 0.456, 0.406])
 imagenet_std = np.array([0.229, 0.224, 0.225])
 
 
-def prompted_inference(prompts):
-    prompt_images = roi_prompts['prompt_inputs']
-    prompt_masks = roi_prompts['prompt_masks']
-    roi_output = os.path.join(output_path, 'roi.png')
-    roi_overlay_output = os.path.join(output_path, 'roi_overlay.png')
-    roi_mask = inference_image(model, device, input_image, prompt_images, prompt_masks, roi_output, roi_overlay_output, return_mask=True, upscale=upscale)
+def prompted_inference(prompts, run_config):
+    prompt_images = prompts['prompt_inputs']
+    prompt_masks = prompts['prompt_masks']
+    output = os.path.join(run_config['output_path'], 'roi.png')
+    overlay_output = os.path.join(run_config['output_path'],
+                                      'roi_overlay.png')
+    return inference_image(run_config['model'], run_config['device'],
+                               run_config['input_image'], prompt_images,
+                               prompt_masks, output, overlay_output,
+                               return_mask=True, upscale=run_config['upscale'])
 
 
 
@@ -57,12 +61,7 @@ def main(args):
     model = prepare_model(ckpt_path, model_type, seg_type).to(device)
 
     # run inference to get roi
-    prompt_images = roi_prompts['prompt_inputs']
-    prompt_masks = roi_prompts['prompt_masks']
-    roi_output = os.path.join(output_path, 'roi.png')
-    roi_overlay_output = os.path.join(output_path, 'roi_overlay.png')
-    roi_mask = inference_image(model, device, input_image, prompt_images, prompt_masks, roi_output, roi_overlay_output, return_mask=True, upscale=upscale)
-
+    roi_mask = prompted_inference(roi_prompts, run_cfg)
     # now convert roi_mask to an image to see it
     # threshold mask
     roi_mask = roi_mask.max(axis=-1)  # convert to greyscale
@@ -72,12 +71,7 @@ def main(args):
         roi_mask_img.save(os.path.join(output_path, 'roi_mask.png'))
 
     # run inference to get objects
-    prompt_images = object_prompts['prompt_inputs']
-    prompt_masks = object_prompts['prompt_masks']
-    object_output = os.path.join(output_path, 'object.png')
-    object_overlay_output = os.path.join(output_path, 'object_overlay.png')
-    object_mask = inference_image(model, device, input_image, prompt_images, prompt_masks, object_output, object_overlay_output, return_mask=True, upscale=upscale)
-
+    object_mask = prompted_inference(object_prompts, run_cfg)
     # convert object_mask to an image to see it
     threshold = 20
     object_mask = object_mask.max(axis=-1)  # convert to greyscale
