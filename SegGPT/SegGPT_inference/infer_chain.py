@@ -18,13 +18,13 @@ imagenet_mean = np.array([0.485, 0.456, 0.406])
 imagenet_std = np.array([0.229, 0.224, 0.225])
 
 
-def prompted_inference(prompts, run_config, model):
+def prompted_inference(prompts, run_config, model, mask_name):
     # TODO: Run on complete list of images
     prompt_images = prompts['prompt_inputs']
     prompt_masks = prompts['prompt_masks']
-    output = os.path.join(run_config['output_path'], 'roi.png')
+    output = os.path.join(run_config['output_path'], f'{mask_name}.png')
     overlay_output = os.path.join(run_config['output_path'],
-                                      'roi_overlay.png')
+                                      f'{mask_name}_overlay.png')
     input_images = run_config['input_files']
     input_image = input_images[0]
     return inference_image(model, run_config['device'],
@@ -66,7 +66,7 @@ def main(args):
     model = prepare_model(ckpt_path, model_type, seg_type).to(device)
 
     # run inference to get roi
-    roi_mask = prompted_inference(roi_prompts, run_cfg, model)
+    roi_mask = prompted_inference(roi_prompts, run_cfg, model, mask_name='roi')
 
     # threshold mask
     roi_mask = roi_mask.max(axis=-1)  # convert to greyscale
@@ -76,7 +76,8 @@ def main(args):
         save_mask(roi_mask, output_path, 'roi')
 
     # run inference to get objects
-    object_mask = prompted_inference(object_prompts, run_cfg, model)
+    object_mask = prompted_inference(object_prompts, run_cfg, model, mask_name='object')
+
     # convert object_mask to an image to see it
     object_mask = object_mask.max(axis=-1)  # convert to greyscale
     object_mask = (object_mask > threshold) & roi_mask
