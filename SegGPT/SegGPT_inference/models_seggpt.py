@@ -48,16 +48,18 @@ class Attention(nn.Module):
         head_dim = dim // num_heads
         self.scale = head_dim**-0.5
 
+        original_input_size_x = 111
+        original_input_size_y = 55  # freeze for the only pretrained model available
+        # TODO: Make this modifiable again
+
         self.qkv = nn.Linear(dim, dim * 3, bias=qkv_bias)
         self.proj = nn.Linear(dim, dim)
 
         self.use_rel_pos = use_rel_pos
         if self.use_rel_pos:
             # initialize relative positional embeddings
-            input_size_x = 111
-            input_size_y = 55
-            self.rel_pos_h = nn.Parameter(torch.zeros(input_size_x, head_dim)) #2 * input_size_x - 1
-            self.rel_pos_w = nn.Parameter(torch.zeros(input_size_y, head_dim)) #2 * input_size_y - 1
+            self.rel_pos_h = nn.Parameter(torch.zeros(original_input_size_x, head_dim)) #2 * input_size_x - 1
+            self.rel_pos_w = nn.Parameter(torch.zeros(original_input_size_y, head_dim)) #2 * input_size_y - 1
 
             if not rel_pos_zero_init:
                 trunc_normal_(self.rel_pos_h, std=0.02)
@@ -400,7 +402,6 @@ class SegGPT(nn.Module):
         mask_token = self.mask_token.expand(batch_size, Hp, Wp, -1)
         # replace the masked visual tokens by mask_token
         w = bool_masked_pos.unsqueeze(-1).type_as(mask_token).reshape(-1, Hp, Wp, 1)
-
         y = y * (1 - w) + mask_token * w
 
         # add pos embed w/o cls token
