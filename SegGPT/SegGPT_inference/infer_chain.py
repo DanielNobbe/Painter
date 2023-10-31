@@ -33,6 +33,10 @@ def prompted_inference(prompts, run_config):
                                return_mask=True, upscale=run_config['upscale'])
 
 
+def save_mask(mask, output_path, mask_name):
+    mask_img = Image.fromarray(255 * mask.astype(np.uint8), mode='L')
+    mask_img.save(os.path.join(output_path, f'{mask_name}.png'))
+
 
 def main(args):
     run_cfg_path = args.config_path
@@ -63,24 +67,21 @@ def main(args):
 
     # run inference to get roi
     roi_mask = prompted_inference(roi_prompts, run_cfg)
-    # now convert roi_mask to an image to see it
+
     # threshold mask
     roi_mask = roi_mask.max(axis=-1)  # convert to greyscale
     roi_mask = roi_mask > threshold
+
     if save_masks:
-        roi_mask_img = Image.fromarray(255 * roi_mask.astype(np.uint8), mode='L')
-        roi_mask_img.save(os.path.join(output_path, 'roi_mask.png'))
+        save_mask(roi_mask, output_path, 'roi')
 
     # run inference to get objects
     object_mask = prompted_inference(object_prompts, run_cfg)
     # convert object_mask to an image to see it
-    threshold = 20
     object_mask = object_mask.max(axis=-1)  # convert to greyscale
     object_mask = (object_mask > threshold) & roi_mask
     if save_masks:
-        object_mask_img = Image.fromarray(255 * object_mask.astype(np.uint8), mode='L')
-        object_mask_img.save(os.path.join(output_path, 'object_mask.png'))
-
+        save_mask(object_mask, output_path, 'object')
 
     # determine number of pixels that make up roi
     roi_pixels = np.count_nonzero(roi_mask)  # could also just do sum
