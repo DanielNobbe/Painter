@@ -18,8 +18,8 @@ imagenet_mean = np.array([0.485, 0.456, 0.406])
 imagenet_std = np.array([0.229, 0.224, 0.225])
 
 
-def main():
-    run_cfg_path = 'configs/runs/base.yaml'
+def main(args):
+    run_cfg_path = args.config_path
     with open(run_cfg_path, 'r') as f:
         run_cfg = yaml.safe_load(f)
 
@@ -48,8 +48,8 @@ def main():
     model = prepare_model(ckpt_path, model_type, seg_type).to(device)
 
     # run inference to get roi
-    prompt_images = roi_prompts['images']
-    prompt_masks = roi_prompts['masks']
+    prompt_images = roi_prompts['prompt_inputs']
+    prompt_masks = roi_prompts['prompt_masks']
     roi_output = os.path.join(output_path, 'roi.png')
     roi_overlay_output = os.path.join(output_path, 'roi_overlay.png')
     roi_mask = inference_image(model, device, input_image, prompt_images, prompt_masks, roi_output, roi_overlay_output, return_mask=True, upscale=upscale)
@@ -63,8 +63,8 @@ def main():
         roi_mask_img.save(os.path.join(output_path, 'roi_mask.png'))
 
     # run inference to get objects
-    prompt_images = object_prompts['images']
-    prompt_masks = object_prompts['masks']
+    prompt_images = object_prompts['prompt_inputs']
+    prompt_masks = object_prompts['prompt_masks']
     object_output = os.path.join(output_path, 'object.png')
     object_overlay_output = os.path.join(output_path, 'object_overlay.png')
     object_mask = inference_image(model, device, input_image, prompt_images, prompt_masks, object_output, object_overlay_output, return_mask=True, upscale=upscale)
@@ -101,7 +101,12 @@ def main():
 if __name__ == '__main__':
     st = time.process_time()
     wt = time.perf_counter()
-    main()
+
+    parser = argparse.ArgumentParser('SegGPT Chained Inference', add_help=False)
+    parser.add_argument('--config-path', type=str, help="Path to run config file (yaml).")
+    args = parser.parse_args()
+    
+    main(args)
 
     et = time.process_time()
     ewt = time.perf_counter()
