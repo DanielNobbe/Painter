@@ -268,6 +268,7 @@ class SegGPT(nn.Module):
              out_feature="last_feat",
              decoder_embed_dim=128,
              loss_func="smoothl1",
+             input_size=(448,448)
              ):
         super().__init__()
 
@@ -281,6 +282,7 @@ class SegGPT(nn.Module):
             embed_dim=embed_dim,
         )
         self.patch_embed.num_patches = (img_size[0] // patch_size) * (img_size[1] // patch_size)
+        self.input_size = input_size
 
         self.mask_token = nn.Parameter(torch.zeros(1, 1, 1, embed_dim))
         self.segment_token_x = nn.Parameter(torch.zeros(1, 1, 1, embed_dim))
@@ -368,10 +370,14 @@ class SegGPT(nn.Module):
         x: (N, L, patch_size**2 *3)
         """
         p = self.patch_size
-        assert imgs.shape[2] == 2 * imgs.shape[3] and imgs.shape[2] % p == 0
+
+        # assert imgs.shape[2] == 2 * imgs.shape[3] and  # this one's bullshit, only works
+        # for square images
+
+        assert imgs.shape[2] % p == 0
 
         w = imgs.shape[3] // p
-        h = w * 2
+        h = imgs.shape[2] // p
         x = imgs.reshape(shape=(imgs.shape[0], 3, h, p, w, p))
         x = torch.einsum('nchpwq->nhwpqc', x)
         x = x.reshape(shape=(imgs.shape[0], h * w, p**2 * 3))
@@ -383,8 +389,10 @@ class SegGPT(nn.Module):
         imgs: (N, 3, H, W)
         """
         p = self.patch_size
-        w = int((x.shape[1]*0.5)**.5)
-        h = w * 2
+        width = self.input_size[1]
+        height = self.input_size[0]
+        w = int(2 * width / p)
+        h = int(height / p)
         assert h * w == x.shape[1]
         
         x = x.reshape(shape=(x.shape[0], h, w, p, p, 3))

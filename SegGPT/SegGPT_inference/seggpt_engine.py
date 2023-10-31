@@ -48,7 +48,11 @@ def run_one_image(img, tgt, model, device):
     y = model.unpatchify(y)
     y = torch.einsum('nchw->nhwc', y).detach().cpu()
 
-    output = y[0, y.shape[1]//2:, :, :]
+    output = y[0, y.shape[1]//2:, :, :] 
+    # this takes only one of the parallel versions of the input image, but the differences are very
+    # small (on a test it was a squared error of 0.0016 on two tensors of 448x448x3)
+    # It looks like all the parallel versions are helped by all prompts, since everything gets mixed up with
+    # the patching. It's a bit inefficient though
     output = torch.clip((output * imagenet_std + imagenet_mean) * 255, 0, 255)
     return output
 
@@ -67,8 +71,8 @@ def create_overlay(image, output):
     return Image.fromarray((overlay).astype(np.uint8))
 
 
-def inference_image(model, device, img_path, img2_paths, tgt2_paths, out_path, ovl_path=None, return_mask=False, upscale=True):
-    res, hres = 448, 448
+def inference_image(model, device, img_path, img2_paths, tgt2_paths, out_path, ovl_path=None, return_mask=False, upscale=True, input_size=(448,448)):
+    res, hres = input_size
 
     image = Image.open(img_path).convert("RGB")  # D: Why is it converted??
     input_image = np.array(image)
@@ -84,17 +88,18 @@ def inference_image(model, device, img_path, img2_paths, tgt2_paths, out_path, o
         tgt2 = Image.open(tgt2_path).convert("RGB")
         tgt2 = tgt2.resize((res, hres), Image.NEAREST)
         tgt2 = np.array(tgt2) / 255.
+        # in PILLOW, the first axis is the width
+        # in numpy, the first axis is the height
 
         tgt = tgt2  # tgt is not available
         tgt = np.concatenate((tgt2, tgt), axis=0)
         img = np.concatenate((img2, image), axis=0)
-    
-        assert img.shape == (2*res, res, 3), f'{img.shape}'
+        assert img.shape == (2*hres, res, 3), f'{img.shape}'
         # normalize by ImageNet mean and std
         img = img - imagenet_mean
         img = img / imagenet_std
 
-        assert tgt.shape == (2*res, res, 3), f'{img.shape}'
+        assert tgt.shape == (2*hres, res, 3), f'{img.shape}'
         # normalize by ImageNet mean and std
         tgt = tgt - imagenet_mean
         tgt = tgt / imagenet_std

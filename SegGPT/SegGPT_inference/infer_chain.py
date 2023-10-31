@@ -18,7 +18,7 @@ imagenet_mean = np.array([0.485, 0.456, 0.406])
 imagenet_std = np.array([0.229, 0.224, 0.225])
 
 
-def prompted_inference(prompts, run_config, model, mask_name):
+def prompted_inference(prompts, run_config, model, mask_name, input_size=(448, 448)):
     # TODO: Run on complete list of images
     prompt_images = prompts['prompt_inputs']
     prompt_masks = prompts['prompt_masks']
@@ -30,7 +30,8 @@ def prompted_inference(prompts, run_config, model, mask_name):
     return inference_image(model, run_config['device'],
                                input_image, prompt_images,
                                prompt_masks, output, overlay_output,
-                               return_mask=True, upscale=run_config['upscale'])
+                               return_mask=True, upscale=run_config['upscale'],
+                               input_size=input_size)
 
 
 def save_mask(mask, output_path, mask_name):
@@ -50,6 +51,7 @@ def main(args):
     model_type = run_cfg['model']
     seg_type = run_cfg['seg_type']  # TODO: Try semantic
     threshold = run_cfg['threshold']
+    input_size = run_cfg['input_size']
 
 
     os.makedirs(output_path, exist_ok=True)
@@ -63,10 +65,10 @@ def main(args):
 
 
     # prepare model
-    model = prepare_model(ckpt_path, model_type, seg_type).to(device)
+    model = prepare_model(ckpt_path, model_type, seg_type, input_size=input_size).to(device)
 
     # run inference to get roi
-    roi_mask = prompted_inference(roi_prompts, run_cfg, model, mask_name='roi')
+    roi_mask = prompted_inference(roi_prompts, run_cfg, model, mask_name='roi', input_size=input_size)
 
     # threshold mask
     roi_mask = roi_mask.max(axis=-1)  # convert to greyscale
@@ -76,7 +78,7 @@ def main(args):
         save_mask(roi_mask, output_path, 'roi')
 
     # run inference to get objects
-    object_mask = prompted_inference(object_prompts, run_cfg, model, mask_name='object')
+    object_mask = prompted_inference(object_prompts, run_cfg, model, mask_name='object', input_size=input_size)
 
     # convert object_mask to an image to see it
     object_mask = object_mask.max(axis=-1)  # convert to greyscale
